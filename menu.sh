@@ -7,7 +7,9 @@
 ###GIT###
 
 #Setup Git connectivity in ~/printer_data/config **Required for new or restore procedures
-gitinit(){
+
+###GITHUB###
+githubinit(){
   printf "\n"
   echo What is your Git Username?
   read vargitusername
@@ -36,7 +38,7 @@ gitinit(){
   read vargitresponse
 
   if [ "$vargitresponse" != "y" -a "$vargitresponse" != "Y" -a "$vargitresponse" != "Yes" -a "$vargitresponse" != "yes" ]; then
-    gitinit
+    githubinit
   fi
 
   cd ~/printer_data/config
@@ -48,7 +50,7 @@ gitinit(){
 }
 
 #Creates first backup when setting up the script for the first time
-gitnew(){
+githubnew(){
   cd ~/printer_data/config/
   git add .
   git commit -m "Initial backup"
@@ -57,6 +59,63 @@ gitnew(){
   echo Setup has been completed
 }
 
+###GITLAB###
+
+gitlabinit(){
+  printf "\n"
+  echo What is your Git Username?
+  read vargitusername
+  sleep 1
+
+  echo What is your Git Email Address?
+  read vargitemail
+  sleep 1
+
+  echo What is your Git Token
+  read vargittoken
+  sleep 1
+
+  echo What is your Git Token Name
+  read vargittokenname
+  sleep 1
+
+  echo What is your Git Repository URL
+  read gitrepo
+  #Remove HTTPS/HTTP
+  vargitrepo=("${gitrepo##*//}")
+
+  printf "\nYou have provided the following Git details:"
+  printf "\nGit Username: $vargitusername"
+  printf "\nGit Email Address: $vargitemail"
+  printf "\nGit Token: $vargittoken"
+  printf "\nGit Token: $vargittokenname"
+  printf "\nGit Repo: $vargitrepo\n"
+  
+  printf "\nIf these details are correct type yes otherwise press any key: "
+  read vargitresponse
+
+  if [ "$vargitresponse" != "y" -a "$vargitresponse" != "Y" -a "$vargitresponse" != "Yes" -a "$vargitresponse" != "yes" ]; then
+    gitinit
+  fi
+
+  cd ~/printer_data/config
+  git init
+  sleep 1
+  git config --global user.name "$vargitusername"
+  git config --global user.email "$vargitemail"
+  git remote add origin https://$vargittokenname:$vargittoken@$vargitrepo
+  git switch --create main
+}
+
+gitlabnew(){
+  git switch --create main
+  cd ~/printer_data/config/
+  git add .
+  git commit -m "Initial backup"
+  git push -uf origin main
+  sleep 1
+  echo Setup has been completed
+}
 
 ###gcode_shell_command.py###
 
@@ -196,30 +255,16 @@ checks(){
   sleep 1
 }
 
-addrestorecommand(){
-    cd /home/$USER/
-    if [ ! -f "restore_command.sh" ]; then
-      echo restore_command.sh does not exist, downloading file....
-      wget -q https://raw.githubusercontent.com/housam-s/Klipper-Backup-Restore-tool/main/restore_command.sh
-    fi
-}
-
-restorecommand(){
-    /bin/bash restore_command.sh
-    checks
-    exit
-}
-
 #Controlling Task
 run(){
   printf "Klippy Backup\nCreated by m00se"
   gitpath=~/printer_data/config/.git
   if [ ! -d "$gitpath" ]; then
-    printf '\n\nAre you configuring backups for a new printer or restoring from an old one?\n'
-    select option in New Restore
+    printf '\n\nAre you using Github or Gitlab?\n'
+    select option in Github Gitlab
     do
             case $option in 
-            New|Restore)   
+            Github|Gitlab)   
                     break
                     ;;
             *)
@@ -228,20 +273,63 @@ run(){
             esac
     done
   
-    if [ $option = "New" ]; then
+    if [ $option = "Github" ]; then
+      echo github
       gitinit
       checks
-      gitnew
-      printf "\nSetup Completed\n"
-      exit
-    elif [ $option = "Restore" ]; then
-      gitinit
+      printf '\n\nAre you configuring backups for a new printer or restoring from an old one?\n'
+      select option in New Restore
+      do
+              case $option in 
+              New|Restore)   
+                      break
+                      ;;
+              *)
+                      echo "Invalid selection" 
+                      ;;
+              esac
+      done
+      if [ $option = "New" ]; then
+        gitnew
+        printf "\nGithub Setup Completed\n"
+        exit
+      elif [ $option = "Restore" ]; then
+        restorecommand
+        printf "\nGithub Restore Completed\n"
+        exit
+      fi
+    
+
+    elif [ $option = "Gitlab" ]; then
+      echo gitlab
+      gitlabinit
+      echo gitlab init
       checks
-      restorecommand
-      printf "\nRestore Completed\n"
-      exit
+      echo gitlab checks
+      printf '\n\nAre you configuring backups for a new printer or restoring from an old one?\n'
+      select option in New Restore
+      do
+              case $option in 
+              New|Restore)   
+                      break
+                      ;;
+              *)
+                      echo "Invalid selection" 
+                      ;;
+              esac
+      done
+  
+      if [ $option = "New" ]; then
+        gitlabnew
+        printf "\nGitlab Setup Completed\n"
+        exit
+      elif [ $option = "Restore" ]; then
+        restorecommand
+        printf "\n Gitlab Restore Completed\n"
+        exit
+      fi
     fi
-  fi
+  fi 
   
   printf "\nConfirming requirements are met\n"
   checks
