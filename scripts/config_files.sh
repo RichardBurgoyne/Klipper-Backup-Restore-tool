@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
 #Download backup.cfg and add it to ~/printer_data/config/
