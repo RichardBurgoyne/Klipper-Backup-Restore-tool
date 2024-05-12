@@ -1,5 +1,5 @@
 #Complete a backup and push it to Github
-backup(){
+function backup(){
   cd ~/printer_data/config
   echo Pushing updates
   sleep 1
@@ -11,4 +11,3 @@ backup(){
   git commit -m "Backup triggered on $current_date" -m "$m1" -m "$m2" -m "$m3" -m "$m4"
   git push -u origin master
 }
-backup
